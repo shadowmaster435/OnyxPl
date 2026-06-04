@@ -1,0 +1,61 @@
+------------------Instructions------------------
+
+    Jump: jump <Address>
+
+    Branch: brch <Memory address>, <True jump address or skip amount>, <False jump address or skip amount>
+        -if the condition in memory is not 0 jump to true otherwise jump to false
+
+    Skip: skip <Byte amount>
+
+    Send to out stream: sout <Byte amount>, <Address>, <Out stream type>
+        -see out stream types
+
+    Mark: mark <String name>
+        -Marks the instruction directly after this one as the provided string name,
+        -Any instruction can reference this address as the provided string name (quotes included)
+        -Value flags work as usual with these
+        -Marks cannot be defined twice or a compiler error will be thrown
+        -Trying to reference a mark defined later on will throw a compiler error
+
+    Remove mark: dmrk <String name>
+        -Undefines a previously defined mark
+        -If the provided mark name doesn't exist this will not do anything
+
+    --Out stream types (defaults to bytearray)--
+        byte, bytearray
+        short, shortarray
+        int, intarray
+        long, longarray
+        float, floatarray
+        double, doublearray
+        bool (treats the least significant bit as a boolean)
+        boolarray (out size corresponds to bits rather than full bytes [eg: out size of 8 is equal to 1 byte], each bit is read as a boolean from right to left)
+        string (ASCII character code sequence)
+    --Out stream types (defaults to bytearray)--
+
+------------------Instructions------------------
+
+------------------Flags------------------
+    [*]: turns any value into a pointer
+
+    -Type Flags-
+    [']: marks a value as a byte for parsing
+    [s]: marks a value as a short for parsing
+    [']: marks a value as a byte for parsing
+    [i]: marks a value as an int for parsing
+    [l]: marks a value as a long for parsing
+    [;]: marks a value as a float for parsing
+    [:]: marks a value as a double for parsing
+
+    Flags can be defined in any order.
+
+    If multiple type flags are used the last type in the sequence will be used for parsing.
+    If no type flags are used you must define values in hexadecimal format,
+    otherwise, define the value as you would the provided type.
+
+    --Examples--
+    An integer being used as an address pointer "*i 100"
+    A float ";0.5"
+    --Examples--
+
+------------------Flags------------------
