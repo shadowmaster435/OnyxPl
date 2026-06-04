@@ -34,6 +34,8 @@ class OnyxExpression<T>(operations: List<Pair<OnyxOperator<*>, List<DataProvider
         override var held; get() = evaluate(); set(_) {}
         val isBinary = op is OnyxBinaryOperator<*,*,*>
         override fun toString(): String {
+
+
             return "($first $op $second)"
         }
         fun evaluate(): T {
@@ -63,6 +65,7 @@ class OnyxExpression<T>(operations: List<Pair<OnyxOperator<*>, List<DataProvider
             val isPrecedenceChainStart = if (lastOp == null) true else lastOp.op.precedence != op.precedence
             val isPrecedenceChainEnd = if (next == null) true else next.first.precedence != op.precedence
             var skip = false
+            var actualLastOp: OpInst<*>? = null
             when(op) {
                 is OnyxUnaryOperator<*,*> -> {}
                 else -> {
@@ -79,12 +82,19 @@ class OnyxExpression<T>(operations: List<Pair<OnyxOperator<*>, List<DataProvider
 
                         if (lastOp != null && !stack.isEmpty()) {
                             if (lastOp.precedence < inst.precedence) {
-                                lastOp.second = inst
-                                stack.push(lastOp)
-                            } else
-                                stack.push(inst)
-                        } else
+                                if (rootOp !== lastOp) {
+                                    lastOp.second = inst
+                                    stack.push(lastOp)
+                                } else {
+                                    rootOp.second = inst
+                                }
+
+
+                            }
+
+                        } else {
                             stack.push(inst)
+                        }
                     }
 
                     if (lastOp != null) {
@@ -110,19 +120,19 @@ class OnyxExpression<T>(operations: List<Pair<OnyxOperator<*>, List<DataProvider
                             }
                         }
                     }
+                    actualLastOp = lastOp
                     lastOp = inst
                 }
             }
             if (isPrecedenceChainEnd) {
-                if (lastOp!!.precedence == rootOp!!.precedence && rootOp !== lastOp) {
+                if (lastOp!!.precedence == rootOp!!.precedence ) {
                     if (stack.peek() !== rootOp)
                         rootOp.second = lastOp
-                    else
-                        rootOp = lastOp
-                } else {
-                    if (stack.isNotEmpty() && stack.peek().precedence < lastOp.precedence)
-                        stack.peek().second = lastOp
+                    else {
 
+                        rootOp = lastOp
+                    }
+                } else {
                     if (lastOp.precedence < rootOp.precedence) {
                         lastOp.first = rootOp
                         rootOp = lastOp

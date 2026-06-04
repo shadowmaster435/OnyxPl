@@ -9,7 +9,7 @@ import org.shadowmaster435.types.LLVMIntType
 import org.shadowmaster435.util.LLVMModule
 
 fun main() {
-    testModifiers()
+    testExpressions()
 }
 
 fun testModifiers() {
@@ -17,23 +17,31 @@ fun testModifiers() {
     print(Lexer.tryLexModifiers(tokens))
 }
 
+fun testExpressions() {
+    val c = "1 + 1 * 2 * 2"
+    val a = "2 * 2 * 8 / 3 % 2 * 5 * 5 + 1 * 2 - 4 - 15 * 4 - 34 * 4"
+    val b = "4 + 2 + 2 * 12 * 3 + 13 + 14 * 3 * 65"
+
+    val d = "4 * -2 + 8 * 8 * 2 + 21 * 4 + 4 + -4 * 44 * 1 + 45 + 1"
+    val tokens = Tokenizer.tokenize("4 / 2 * 2")
+    val keypoints = LexerKeypointParser.parse(tokens)
+    val expr = Lexer.lexExpression(tokens, keypoints, Int::class.java)
+    println(expr.evaluate())
+    println(2 * 2 * 8 / 3 % 2 * 5 * 5 + 1 * 2 - 4 - 15 * 4 - 34 * 4)
+
+}
+
 fun onyxTesting() {
 
 
-//    val c = "1 + 1 * 2 * 2"
-//    val a = "1 + 2 * 8 / 3 % 2 * 5 * 5 + 1 * 4 - 4 - 4 * 4 - 4 * 4"
-//    val b = "4 + 2 * 12 * 3 + 13 + 14 * 3 * 65"
+
 //
-//    val d = "4 * -2 + 8 * 8 * 2 + 21 * 4 + 4 + -4 * 44 * 1 + 45 + 1"
-//
-//    val tokens = Tokenizer.tokenize("3 * 1 + 4 * 4")
+
+//    val tokens = Tokenizer.tokenize(sampleClass1)
 //    val keypoints = LexerKeypointParser.parse(tokens)
-//    val expr = Lexer.lexExpression(tokens, keypoints, Int::class.java)
-    val tokens = Tokenizer.tokenize(sampleClass1)
-    val keypoints = LexerKeypointParser.parse(tokens)
-    keypoints.forEach {
-        println(it)
-    }
+//    keypoints.forEach {
+//        println(it)
+//    }
 //    tokens.forEach {
 //        println(it.type)
 //    }

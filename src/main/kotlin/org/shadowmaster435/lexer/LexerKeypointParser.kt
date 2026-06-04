@@ -66,8 +66,6 @@ object LexerKeypointParser {
         }
         return keypoints
     }
-    private val number = Regex("[0-9]+")
-    private val negatableNumber = Regex("\\.?[0-9]")
 
     private fun updateHeaderType(token: Token): StackAction {
         when(token.type) {
