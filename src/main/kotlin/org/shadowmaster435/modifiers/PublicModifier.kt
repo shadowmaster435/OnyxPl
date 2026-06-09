@@ -5,5 +5,5 @@ import org.shadowmaster435.impl.enums.AccessType
 
 object PublicModifier : AccessModifier() {
     override val accessType = AccessType.PUBLIC
-    override val chainableWith = listOf(StaticModifier::class.java, AbstractModifier::class.java, FinalModifier::class.java)
+    override val chainableWith = listOf(StaticModifier::class.java, AbstractModifier::class.java, FinalModifier::class.java, MetaModifier::class.java)
 }

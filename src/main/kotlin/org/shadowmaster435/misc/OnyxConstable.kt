@@ -2,12 +2,14 @@ package org.shadowmaster435.misc
 
 import org.shadowmaster435.impl.CodeObject
 import org.shadowmaster435.impl.DataProvider
+import org.shadowmaster435.impl.OnyxMember
+import org.shadowmaster435.impl.OnyxType
 import org.shadowmaster435.impl.enums.CodeObjType
 
-open class OnyxConstable<T>(open val v: T & Any) : DataProvider<T & Any>, CodeObject<T> {
+open class OnyxConstable(open val v: Any?, override val type: OnyxType) : DataProvider, CodeObject {
+    override var initialized: Boolean = true
+    override fun instantiate(vararg params: DataProvider) = this
     override val objType = CodeObjType.DATA
-    override var held: T & Any = v
-    override val typeClass: Class<*> = v::class.java
+    override var held: Any? = v
     override fun toString() = v.toString()
-
 }

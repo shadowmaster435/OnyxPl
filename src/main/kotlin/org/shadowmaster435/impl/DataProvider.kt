@@ -1,9 +1,7 @@
 package org.shadowmaster435.impl
 
-import org.shadowmaster435.impl.abstracts.OnyxOperator
-
-interface DataProvider<T> {
-    var held : T
-    val typeClass : Class<*>
-
+interface DataProvider: OnyxMember {
+    var held : Any?
+    val type: OnyxType
+    override fun initialize(namedScopeMembers: HashMap<String, OnyxMember>) {}
 }

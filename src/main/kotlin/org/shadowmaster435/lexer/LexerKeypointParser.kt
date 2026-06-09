@@ -1,9 +1,8 @@
 package org.shadowmaster435.lexer
 
-import org.shadowmaster435.lexer.LexerScopeType
 import org.shadowmaster435.tokenizer.Token
 import org.shadowmaster435.tokenizer.TokenType
-import java.util.Stack
+import java.util.*
 
 object LexerKeypointParser {
     private var lastScopeType: LexerScopeType = LexerScopeType.FILE
@@ -38,7 +37,7 @@ object LexerKeypointParser {
                 else -> {}
             }
             updateScopeType(token)
-
+            checkFieldDef(token, i, keypoints)
             if (scopeUnchanged) {
                 if (token.type.isOperator) {
 //                    val next = tokens.getOrNull(i + 1)
@@ -48,11 +47,20 @@ object LexerKeypointParser {
 //                                (next.tokenString == "." && afterNext != null && number.matches(afterNext.tokenString))
 //                    )
 //                    if (!isNumber)
-                    keypoints.add(LexerKeypoint(currentScopeType, i, token, LexerKeypointType.OPERATOR))
+                    checkExpression(token, i, keypoints)
+                    checkTypeSpecifier(token, i, keypoints)
+
+                    if (token.type != TokenType.ASSIGN) keypoints.add(LexerKeypoint(currentScopeType, i, token, LexerKeypointType.OPERATOR))
                 }
 
                 else if (token.type == TokenType.STRING)
                     keypoints.add(LexerKeypoint(currentScopeType,i, token, LexerKeypointType.STRING))
+                else if (lastTokenType.subtypes.contains(TokenType.TokenSubtype.GROUP_START)) {
+                    keypoints.add(LexerKeypoint(currentScopeType,i, tokens[i - 1], LexerKeypointType.GROUP_START))
+                }
+            } else if (token.hasSubType(TokenType.TokenSubtype.GROUP_END)) {
+                keypoints.add(LexerKeypoint(currentScopeType,i, token, LexerKeypointType.GROUP_END))
+
             }
 
             if (currentScopeType != lastScopeType) {
@@ -82,7 +90,28 @@ object LexerKeypointParser {
         }
     }
 
+    private fun checkExpression(token: Token, i: Int, keypoints: MutableList<LexerKeypoint>) {
+        if (token.type == TokenType.ASSIGN) {
+            keypoints.add(
+                LexerKeypoint(currentScopeType, i + 1, token, LexerKeypointType.EXPRESSION_START)
+            )
+        }
+    }
 
+    private fun checkTypeSpecifier(token: Token, i: Int, keypoints: MutableList<LexerKeypoint>) {
+        if (token.type == TokenType.COLON) {
+            keypoints.add(
+                LexerKeypoint(currentScopeType, i + 1, token, LexerKeypointType.TYPE_SPECIFIER)
+            )
+        }
+    }
+    private fun checkFieldDef(token: Token, i: Int, keypoints: MutableList<LexerKeypoint>) {
+        if (token.type == TokenType.CONST || token.type == TokenType.VAR || token.type == TokenType.VAL) {
+            keypoints.add(
+                LexerKeypoint(currentScopeType, i, token, LexerKeypointType.FIELD_DEF)
+            )
+        }
+    }
 
     private fun updateScopeType(token: Token) {
         scopeUnchanged = false
@@ -120,8 +149,6 @@ object LexerKeypointParser {
                 scopeTypeStack.pop()
                 currentScopeType = scopeTypeStack.peek()
             } else {
-
-
                 isPopScope = true
             }
         }
@@ -239,6 +266,7 @@ object LexerKeypointParser {
         override fun toString(): String {
             return "LexerKeypoint(scopeType=$scopeType, index=$index, token=${token.tokenString}, type=${type})"
         }
+
     }
     private enum class StackAction {
         PUSH,
@@ -255,6 +283,11 @@ object LexerKeypointParser {
 
     enum class LexerKeypointType {
         SCOPE,
+        GROUP_END,
+        EXPRESSION_START,
+        TYPE_SPECIFIER,
+        FIELD_DEF,
+        GROUP_START,
         OPERATOR,
         STRING,
     }

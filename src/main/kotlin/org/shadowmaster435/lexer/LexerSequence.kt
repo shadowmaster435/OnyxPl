@@ -7,7 +7,7 @@ import org.shadowmaster435.tokenizer.TokenType
 import java.util.Stack
 
 
-class LexerSequence<T: DataProvider<*>> private constructor(private val list: List<SequenceEntry>) {
+class LexerSequence<T: DataProvider> private constructor(private val list: List<SequenceEntry>) {
     private var ended = false
     private var lastCompiledEntry: CompiledEntry? = null
     private var i = 0
@@ -30,7 +30,7 @@ class LexerSequence<T: DataProvider<*>> private constructor(private val list: Li
     class LexerSequenceBuilder {
         private var building = true
         private var list = mutableListOf<SequenceEntry>()
-        fun compiled(listener: () -> DataProvider<*>) {
+        fun compiled(listener: () -> DataProvider) {
             if (building) list.add(CompiledEntry(listener))
             else throw RuntimeException("Cannot call builder functions outside a builder")
         }
@@ -81,7 +81,7 @@ class LexerSequence<T: DataProvider<*>> private constructor(private val list: Li
             building = false
             val copy = buildList { addAll(list) }
             list.clear()
-            return LexerSequence<DataProvider<*>>(copy)
+            return LexerSequence<DataProvider>(copy)
         }
 
     }
@@ -95,8 +95,8 @@ class LexerSequence<T: DataProvider<*>> private constructor(private val list: Li
     open class OrSequenceEntry(sequenceType: SequenceType, string: String, tokenType: TokenType): SequenceEntry(sequenceType, string, tokenType)
     class SubSequenceEntry(val subSequence: LexerSequence<*>): SequenceEntry(SequenceType.SUBSEQUENCE, "", TokenType.ANY)
     class OrSubSequenceEntry(val subSequence: LexerSequence<*>): SequenceEntry(SequenceType.OR, "", TokenType.ANY)
-    class CompiledEntry(val compileListener: () -> DataProvider<*>): SequenceEntry(SequenceType.COMPILED, "", TokenType.ANY) {
-        lateinit var compiled: DataProvider<*>
+    class CompiledEntry(val compileListener: () -> DataProvider): SequenceEntry(SequenceType.COMPILED, "", TokenType.ANY) {
+        lateinit var compiled: DataProvider
     }
 
 

@@ -3,18 +3,19 @@ package org.shadowmaster435.impl.abstracts
 import org.shadowmaster435.impl.DataProvider
 import org.shadowmaster435.impl.LLVMConstableValue
 import org.shadowmaster435.impl.LLVMType
+import org.shadowmaster435.impl.OnyxType
 import org.shadowmaster435.types.LLVMTypes
 import org.shadowmaster435.util.LLVMBuilder
 
-abstract class OnyxBinaryOperator<A, B, C> : OnyxOperator<C>() {
+abstract class OnyxBinaryOperator(val leftType: OnyxType, val rightType: OnyxType, retType: OnyxType) : OnyxOperator(retType) {
 
     
     companion object {
-        fun getLLVMNumberType(evaluationParams: OnyxOperator<Number>.EvaluationParams): LLVMType<*> {
+        fun getLLVMNumberType(evaluationParams: EvaluationParams): LLVMType<*> {
             return LLVMTypes.typeOf(getNumberType(evaluationParams))
         }
 
-        fun getNumberType(evaluationParams: OnyxOperator<Number>.EvaluationParams): Class<*> {
+        fun getNumberType(evaluationParams: EvaluationParams): Class<*> {
             val a = evaluationParams.getParam(0)
             val b = evaluationParams.getParam(1)
             return when(a.held) {

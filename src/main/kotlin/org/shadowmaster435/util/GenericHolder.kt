@@ -1,8 +1,12 @@
 package org.shadowmaster435.util
 
+import org.shadowmaster435.classes.anyType
 import org.shadowmaster435.impl.DataProvider
+import org.shadowmaster435.impl.OnyxMember
 
-class GenericHolder<T>(override var held: T) : DataProvider<T> {
-    override val typeClass: Class<*> = if (held == null) Nothing::class.java else held!!::class.java
+class GenericHolder(override var held: Any?) : DataProvider, OnyxMember {
     override fun toString() = "$held"
+    override val type = anyType
+    override var initialized = true
+    override fun instantiate(vararg params: DataProvider) = this
 }

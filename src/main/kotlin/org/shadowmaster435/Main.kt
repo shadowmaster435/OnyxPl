@@ -1,7 +1,5 @@
 package org.shadowmaster435
 
-import org.shadowmaster435.bytecode.OnyxAsmParser
-import org.shadowmaster435.bytecode.OnyxProgram
 import org.shadowmaster435.lexer.Lexer
 import org.shadowmaster435.lexer.LexerKeypointParser
 import org.shadowmaster435.tokenizer.Tokenizer
@@ -9,12 +7,32 @@ import org.shadowmaster435.types.LLVMIntType
 import org.shadowmaster435.util.LLVMModule
 
 fun main() {
-    testExpressions()
+    fieldTesting()
 }
 
 fun testModifiers() {
     val tokens = Tokenizer.tokenize(modifierTest)
     print(Lexer.tryLexModifiers(tokens))
+}
+
+val b = 1 +
+        1
+fun fieldTesting() {
+    val a = "val a: Int = 2 + 5 + (4 * (1 - 4))"
+    val tokens = Tokenizer.tokenize(a)
+    val keypoints = LexerKeypointParser.parse(tokens)
+    val v = Lexer.lexField(tokens, 0, keypoints)
+    println(v)
+    println(v.held)
+}
+
+
+fun funcTesting() {
+    val str = """
+        fun test(a: Int, b: Int): Int {
+            return a + b
+        }
+    """.trimMargin()
 }
 
 fun testExpressions() {
@@ -23,11 +41,16 @@ fun testExpressions() {
     val b = "4 + 2 + 2 * 12 * 3 + 13 + 14 * 3 * 65"
 
     val d = "4 * -2 + 8 * 8 * 2 + 21 * 4 + 4 + -4 * 44 * 1 + 45 + 1"
-    val tokens = Tokenizer.tokenize("4 / 2 * 2")
+    val e = "2 + ((1 - 4) * 4)" // make work
+    val f = "2 + (4 * (1 - 4))"
+    val tokens = Tokenizer.tokenize(e)
     val keypoints = LexerKeypointParser.parse(tokens)
-    val expr = Lexer.lexExpression(tokens, keypoints, Int::class.java)
-    println(expr.evaluate())
-    println(2 * 2 * 8 / 3 % 2 * 5 * 5 + 1 * 2 - 4 - 15 * 4 - 34 * 4)
+    println(keypoints)
+//    @Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
+//    val expr = Lexer.lexExpression(tokens, keypoints, Integer::class.java)
+//    println(expr)
+//    println(expr.evaluate())
+//    println(2 * 2 * 8 / 3 % 2 * 5 * 5 + 1 * 2 - 4 - 15 * 4 - 34 * 4)
 
 }
 
@@ -37,11 +60,11 @@ fun onyxTesting() {
 
 //
 
-//    val tokens = Tokenizer.tokenize(sampleClass1)
-//    val keypoints = LexerKeypointParser.parse(tokens)
-//    keypoints.forEach {
-//        println(it)
-//    }
+    val tokens = Tokenizer.tokenize(sampleClass1)
+    val keypoints = LexerKeypointParser.parse(tokens)
+    keypoints.forEach {
+        println(it)
+    }
 //    tokens.forEach {
 //        println(it.type)
 //    }

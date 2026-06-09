@@ -64,9 +64,13 @@ object Tokenizer {
         add(TokenizerScanner("}", TokenType.CLOSE_BRACKET))
         add(TokenizerScanner("[", TokenType.OPEN_BRACE))
         add(TokenizerScanner("]", TokenType.CLOSE_BRACE))
+        add(TokenizerScanner("]", TokenType.CLOSE_BRACE))
+        add(TokenizerScanner(":", TokenType.COLON))
 
         add(TokenizerScanner("define", TokenType.DEFINE))
         add(TokenizerScanner("!is", TokenType.IS_NOT))
+        add(TokenizerScanner("in", TokenType.IN))
+        add(TokenizerScanner("!in", TokenType.NOT_IN))
         add(TokenizerScanner("!as", TokenType.SAFE_AS))
         add(TokenizerScanner("as", TokenType.AS))
         add(TokenizerScanner("is", TokenType.IS))

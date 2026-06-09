@@ -1,6 +1,5 @@
 package org.shadowmaster435.impl.abstracts
 
-abstract class OnyxUnaryOperator<A, B> : OnyxOperator<B>() {
+import org.shadowmaster435.impl.OnyxType
 
-
-}
+abstract class OnyxUnaryOperator(val type: OnyxType, retType: OnyxType) : OnyxOperator(retType)

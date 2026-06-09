@@ -2,43 +2,37 @@ package org.shadowmaster435.misc
 
 import org.shadowmaster435.impl.CodeObject
 import org.shadowmaster435.impl.DataProvider
-import org.shadowmaster435.impl.LLVMMutableValue
-import org.shadowmaster435.impl.LLVMType
-import org.shadowmaster435.impl.LLVMValue
+import org.shadowmaster435.impl.OnyxMember
+import org.shadowmaster435.impl.OnyxType
 import org.shadowmaster435.impl.abstracts.OnyxBinaryOperator
 import org.shadowmaster435.impl.abstracts.OnyxOperator
 import org.shadowmaster435.impl.abstracts.OnyxUnaryOperator
 import org.shadowmaster435.impl.enums.CodeObjType
-import org.shadowmaster435.types.LLVMDoubleType
-import org.shadowmaster435.types.LLVMFloatType
-import org.shadowmaster435.types.LLVMIntType
-import org.shadowmaster435.types.LLVMLongType
 import org.shadowmaster435.util.GenericHolder
-import org.shadowmaster435.util.LLVMBuilder
-import java.util.EmptyStackException
-import java.util.Stack
+import java.util.*
 
-class OnyxExpression<T>(operations: List<Pair<OnyxOperator<*>, List<DataProvider<*>>>>, override val typeClass: Class<T>) : CodeObject<T>, DataProvider<T> {
+class OnyxExpression(operations: List<Pair<OnyxOperator, List<DataProvider>>>, override val type: OnyxType) : CodeObject, DataProvider, OnyxMember {
     override val objType = CodeObjType.DATA
-    override var held: T
+    override var initialized = false
+    override var held
         get() = evaluate().held
         set(_) {}
     @Suppress("UNCHECKED_CAST")
-    inner class OpInst<T>(
-        var first: DataProvider<*>,
-        val op: OnyxOperator<T>,
-        var second: DataProvider<*>,
+    inner class OpInst(
+        var first: DataProvider,
+        val op: OnyxOperator,
+        var second: DataProvider,
         val precedence: Int
-        ) : DataProvider<T> {
-        override val typeClass; get() = throw RuntimeException("Should Never Be Called")
+    ) : DataProvider {
+        override var initialized: Boolean = false
+        override fun instantiate(vararg params: DataProvider) = this
+        override val type; get() = throw RuntimeException("Should Never Be Called")
         override var held; get() = evaluate(); set(_) {}
-        val isBinary = op is OnyxBinaryOperator<*,*,*>
+        val isBinary = op is OnyxBinaryOperator
         override fun toString(): String {
-
-
-            return "($first $op $second)"
+            return "$first $op $second"
         }
-        fun evaluate(): T {
+        fun evaluate(): Any? {
             val builder = op.begin()
             builder.accept(first)
             if (isBinary) {
@@ -46,17 +40,34 @@ class OnyxExpression<T>(operations: List<Pair<OnyxOperator<*>, List<DataProvider
             }
             return builder.evaluate().held
         }
+
+        fun treeInit(currentScope: HashMap<String, OnyxMember>) {
+            fun tree(provider: DataProvider) {
+                when(provider) {
+                    is OpInst -> treeInit(currentScope)
+                    is OnyxMember -> provider.initialize(currentScope)
+                }
+            }
+            tree(first)
+            tree(second)
+        }
+
     }
 
     val chain = run {
-        class TempOp: DataProvider<Any> {
-            override var held: Any; get() = throw RuntimeException("This shouldn't happen")
+        class TempOp: DataProvider {
+            override var initialized: Boolean
+                get() = throw RuntimeException("This shouldn't happen")
+                set(value) {throw RuntimeException("This shouldn't happen")}
+
+            override fun instantiate(vararg params: DataProvider) = this
+            override var held: Any?; get() = throw RuntimeException("This shouldn't happen")
                 set(_) {throw RuntimeException("This shouldn't happen")}
-            override val typeClass: Class<*>; get() = throw RuntimeException("This shouldn't happen")
+            override val type; get() = throw RuntimeException("This shouldn't happen")
         }
-        val stack = Stack<OpInst<*>>()
-        var lastOp: OpInst<*>? = null
-        var rootOp: OpInst<*>? = null
+        val stack = Stack<OpInst>()
+        var lastOp: OpInst? = null
+        var rootOp: OpInst? = null
         repeat(operations.size) {
             val pair = operations[it]
             val op = pair.first
@@ -65,9 +76,9 @@ class OnyxExpression<T>(operations: List<Pair<OnyxOperator<*>, List<DataProvider
             val isPrecedenceChainStart = if (lastOp == null) true else lastOp.op.precedence != op.precedence
             val isPrecedenceChainEnd = if (next == null) true else next.first.precedence != op.precedence
             var skip = false
-            var actualLastOp: OpInst<*>? = null
+            var actualLastOp: OpInst? = null
             when(op) {
-                is OnyxUnaryOperator<*,*> -> {}
+                is OnyxUnaryOperator -> {}
                 else -> {
                     val inst = OpInst(
                         if (isPrecedenceChainStart)
@@ -157,10 +168,18 @@ class OnyxExpression<T>(operations: List<Pair<OnyxOperator<*>, List<DataProvider
         rootOp!!
     }
 
+    override fun initialize(namedScopeMembers: HashMap<String, OnyxMember>) {
+        chain.treeInit(namedScopeMembers)
+    }
+
+    override fun instantiate(vararg params: DataProvider) = this
+
+    override fun toString(): String {
+        return "($chain)"
+    }
 
     @Suppress("UNCHECKED_CAST")
-    fun evaluate(): DataProvider<T> {
-        println(chain)
-        return GenericHolder(chain.evaluate()) as DataProvider<T>
+    fun evaluate(): DataProvider {
+        return GenericHolder(chain.evaluate()) as DataProvider
     }
 }

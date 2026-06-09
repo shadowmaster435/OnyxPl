@@ -1,26 +1,31 @@
 package org.shadowmaster435.lexer
 
+import org.shadowmaster435.code.fields.OnyxVal
+import org.shadowmaster435.code.fields.OnyxVar
 import org.shadowmaster435.impl.CodeObject
 import org.shadowmaster435.impl.DataProvider
 import org.shadowmaster435.impl.Modifier
+import org.shadowmaster435.impl.OnyxType
 import org.shadowmaster435.impl.abstracts.OnyxBinaryOperator
 import org.shadowmaster435.impl.abstracts.OnyxOperator
 import org.shadowmaster435.impl.abstracts.OnyxUnaryOperator
-import org.shadowmaster435.misc.OnyxBoolean
-import org.shadowmaster435.misc.OnyxByte
+import org.shadowmaster435.built_ins.OnyxBoolean
+import org.shadowmaster435.built_ins.OnyxByte
 import org.shadowmaster435.misc.OnyxConstable
-import org.shadowmaster435.misc.OnyxDouble
+import org.shadowmaster435.built_ins.OnyxDouble
 import org.shadowmaster435.misc.OnyxExpression
-import org.shadowmaster435.misc.OnyxFloat
-import org.shadowmaster435.misc.OnyxInt
-import org.shadowmaster435.misc.OnyxLong
+import org.shadowmaster435.built_ins.OnyxFloat
+import org.shadowmaster435.built_ins.OnyxInt
+import org.shadowmaster435.built_ins.OnyxIntClass
+import org.shadowmaster435.built_ins.OnyxLong
+import org.shadowmaster435.built_ins.OnyxNull
 import org.shadowmaster435.misc.OnyxModifiers
-import org.shadowmaster435.misc.OnyxNull
-import org.shadowmaster435.misc.OnyxShort
-import org.shadowmaster435.misc.OnyxString
+import org.shadowmaster435.built_ins.OnyxShort
+import org.shadowmaster435.built_ins.OnyxString
 import org.shadowmaster435.modifiers.AbstractModifier
 import org.shadowmaster435.modifiers.FinalModifier
 import org.shadowmaster435.modifiers.GlobalModifier
+import org.shadowmaster435.modifiers.MetaModifier
 import org.shadowmaster435.modifiers.OverrideModifier
 import org.shadowmaster435.modifiers.PackageModifier
 import org.shadowmaster435.modifiers.PrivateModifier
@@ -28,6 +33,8 @@ import org.shadowmaster435.modifiers.ProtectedModifier
 import org.shadowmaster435.modifiers.PublicModifier
 import org.shadowmaster435.modifiers.StaticModifier
 import org.shadowmaster435.modifiers.VarArgModifier
+import org.shadowmaster435.operators.logical.OnyxIs
+import org.shadowmaster435.operators.logical.OnyxIsNot
 import org.shadowmaster435.operators.mathmatical.OnyxAdd
 import org.shadowmaster435.operators.mathmatical.OnyxDiv
 import org.shadowmaster435.operators.mathmatical.OnyxMod
@@ -48,12 +55,12 @@ object Lexer {
     private var inString = false
     private var currentString = ""
 
-    private var lastObject: CodeObject<*>? = null
-    private var lastProvider: DataProvider<*>? = null
+    private var lastObject: CodeObject? = null
+    private var lastProvider: DataProvider? = null
     private var currentError: Throwable? = null
     private var line = 0
 
-    private var obj : CodeObject<*>? = null
+    private var obj : CodeObject? = null
     private fun parse(string: String) {
         return lex(Tokenizer.tokenize(string))
     }
@@ -85,24 +92,35 @@ object Lexer {
         if (inString) throw LexerException(line, "String is missing closing quote")
     }
 
-
-    fun lexExpression(tokens: List<Token>, keypoints: List<LexerKeypointParser.LexerKeypoint>, typeClass: Class<*>): OnyxExpression<*> {
+    private var lastExpressionProvider: DataProvider? = null
+    fun lexExpression(tokens: List<Token>, keypoints: List<LexerKeypointParser.LexerKeypoint>, type: OnyxType): DataProvider {
+        val tokens = tokens.filter { it.type != TokenType.NEWLINE }
         fun next(): Token? {
             return tokens.getOrNull(i + 1)
         }
         fun last(): Token? {
             return tokens.getOrNull(i - 1)
         }
-        var lastProvider: DataProvider<*>? = null
-        val resultList = mutableListOf<Pair<OnyxOperator<*>, List<DataProvider<*>>>>()
-        keypoints.forEach { keypoint ->
+        var lastProvider: DataProvider? = null
+        val resultList = mutableListOf<Pair<OnyxOperator, List<DataProvider>>>()
+        keypoints.forEachIndexed { index, keypoint ->
             val token = keypoint.token
-            if (keypoint.type == LexerKeypointParser.LexerKeypointType.OPERATOR) {
+            if (keypoint.type == LexerKeypointParser.LexerKeypointType.OPERATOR ) {
                 val last = last()
                 i = keypoint.index - if (last == null || !last.type.isOperator) 1 else 0
-                val leftProvider = lastProvider ?: ConstableLexer.tryLexConstable(tokens)
+                val leftProvider = lastProvider ?: lastExpressionProvider ?: ConstableLexer.tryLexConstable(tokens)
+
                 i += 1
-                val provider = ConstableLexer.tryLexConstable(tokens)
+                var skipped = false
+                val provider = if (tokens[i].type == TokenType.OPEN_PARENTHESIS) {
+                    i += 1
+
+                    val expr = lexExpression(tokens, keypoints.slice((index + 2)..<keypoints.size), type)
+                    i -= 1
+                    skipped = true
+                    expr
+                } else ConstableLexer.tryLexConstable(tokens)
+
                 val binaryLeft = token.hasSubType(TokenType.TokenSubtype.BINARY_OR_LEFT_OPERATOR)
                 val binary = token.hasSubType(TokenType.TokenSubtype.BINARY_OPERATOR)
                 val left = token.hasSubType(TokenType.TokenSubtype.LEFT_OPERATOR)
@@ -111,11 +129,12 @@ object Lexer {
                 if (binary || binaryLeft) {
                     val actuallyUnary = binaryLeft && leftProvider == null && provider != null
 
-
                     if (!actuallyUnary) {
                         resultList.add(
                             createBinaryOperator(
-                                (leftProvider ?: throw RuntimeException("Missing expression before binary operator")),
+                                (leftProvider ?: run {
+                                    throw RuntimeException("Missing expression before binary operator")
+                                }),
                                 (provider ?: throw RuntimeException("Missing expression after binary operator")),
                                 token.type
                             ) to listOf(leftProvider, provider)
@@ -123,30 +142,69 @@ object Lexer {
                     } else {
                         resultList.add(createUnaryOperator(provider, token.type) to listOf(provider))
                     }
-                    return@forEach
+                    if (skipped) {
+                        val expr = OnyxExpression(resultList, type)
+                        lastExpressionProvider = expr
+                        return expr
+                    }
+
+                    return@forEachIndexed
                 }
+
                 lastProvider = provider
             }
         }
-        return OnyxExpression(resultList, typeClass)
+        if (resultList.isEmpty()) return ConstableLexer.tryLexConstable(tokens)!!
+        return OnyxExpression(resultList, type)
     }
 
-    private fun createBinaryOperator(left: DataProvider<*>, right: DataProvider<*>, type: TokenType): OnyxBinaryOperator<*,*,*> {
+    private fun createBinaryOperator(left: DataProvider, right: DataProvider, type: TokenType): OnyxBinaryOperator {
         return when(type) {
             TokenType.ADD -> OnyxAdd.create(left, right)
             TokenType.SUB -> OnyxSub.create(left, right)
             TokenType.MUL -> OnyxMul.create(left, right)
             TokenType.DIV -> OnyxDiv.create(left, right)
             TokenType.MOD -> OnyxMod.create(left, right)
+
+            TokenType.IS -> OnyxIs(left.type, right.type)
+            TokenType.IS_NOT -> OnyxIsNot(left.type, right.type)
+
+            TokenType.ELVIS -> OnyxIs(left.type, right.type)
+
             else -> throw RuntimeException("this should never happen")
         }
     }
 
-    private fun createUnaryOperator(provider: DataProvider<*>, type: TokenType): OnyxUnaryOperator<*,*> {
+    private fun createUnaryOperator(provider: DataProvider, type: TokenType): OnyxUnaryOperator {
         return when(type) {
             TokenType.SUB -> OnyxNegate.create(provider)
             else -> throw RuntimeException("this should never happen")
         }
+    }
+
+    fun lexField(tokens: List<Token>, keypointIndex: Int, keypoints: List<LexerKeypointParser.LexerKeypoint>, modifiers: OnyxModifiers = OnyxModifiers(listOf(
+        PublicModifier))): DataProvider {
+        val startPoint = keypoints[keypointIndex].index
+        var exprKeypointStartIndex = 0
+        val exprStart = run {
+            var i = keypointIndex
+            while (i < keypoints.size) {
+                val kp = keypoints[i]
+                if (kp.type == LexerKeypointParser.LexerKeypointType.EXPRESSION_START) {
+                    exprKeypointStartIndex = i
+                    return@run kp.index
+                }
+                i++
+            }
+            -1
+        }
+
+        val tokens = tokens.slice(keypointIndex..<tokens.size)
+        val isVar = tokens.first().type == TokenType.VAR
+        val name = tokens[1].tokenString
+        val hasDefinedType = tokens[2].type == TokenType.COLON
+        val expr = lexExpression(tokens, keypoints.slice((exprKeypointStartIndex)..<keypoints.size), OnyxIntClass.type)
+        return if (isVar) OnyxVar(name, expr, modifiers) else OnyxVal(name, expr, modifiers)
     }
 
 
@@ -187,6 +245,7 @@ object Lexer {
         Pair(T.VARARG, VarArgModifier),
         Pair(T.OVERRIDE, OverrideModifier),
         Pair(T.FINAL, FinalModifier),
+        Pair(T.META, MetaModifier),
     )
     object ConstableLexer {
 
@@ -206,7 +265,7 @@ object Lexer {
             return null
         }
 
-        fun tryLexConstable(tokens: List<Token>): OnyxConstable<*>? {
+        fun tryLexConstable(tokens: List<Token>): OnyxConstable? {
             val current = tokens[i]
             val startChar = current.tokenString.first()
             return if (current.type == T.NULL) OnyxNull
@@ -218,7 +277,7 @@ object Lexer {
         }
 
 
-        fun tryLexNumber(tokens: List<Token>, current: Token) : OnyxConstable<*>? {
+        fun tryLexNumber(tokens: List<Token>, current: Token) : OnyxConstable {
             var current = current
             if (current.tokenString == "-") current = tokens[i+++1]
             val beforeLast = tokens.getOrNull(i - 2)
@@ -269,8 +328,7 @@ object Lexer {
 
         private val number = Regex("[0-9.]")
         private val numberWithNegative = Regex("[0-9.\\-]")
-
-
     }
+
 
 }

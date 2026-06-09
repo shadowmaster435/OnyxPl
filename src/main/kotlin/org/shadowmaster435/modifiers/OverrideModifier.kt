@@ -1,8 +1,6 @@
 package org.shadowmaster435.modifiers
 
 import org.shadowmaster435.impl.Modifier
-import org.shadowmaster435.impl.abstracts.AccessModifier
-import org.shadowmaster435.impl.enums.AccessType
 import org.shadowmaster435.impl.enums.ModifierScope
 
 object OverrideModifier : Modifier {

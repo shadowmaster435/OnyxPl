@@ -7,6 +7,7 @@ enum class TokenType(vararg val subtypes: TokenSubtype) {
     IS(TokenSubtype.OPERATOR, TokenSubtype.BINARY_OPERATOR),
     AS(TokenSubtype.OPERATOR, TokenSubtype.BINARY_OPERATOR),
     AT(TokenSubtype.OPERATOR, TokenSubtype.LEFT_OPERATOR),
+    IN(TokenSubtype.OPERATOR, TokenSubtype.BINARY_OPERATOR),
     ADD(TokenSubtype.OPERATOR, TokenSubtype.BINARY_OPERATOR),
     SUB(TokenSubtype.OPERATOR, TokenSubtype.BINARY_OR_LEFT_OPERATOR),
     DIV(TokenSubtype.OPERATOR, TokenSubtype.BINARY_OPERATOR),
@@ -35,6 +36,7 @@ enum class TokenType(vararg val subtypes: TokenSubtype) {
     STRING(TokenSubtype.OTHER),
     DOLLAR_SIGN(TokenSubtype.OPERATOR, TokenSubtype.LEFT_OPERATOR),
     IS_NOT(TokenSubtype.OPERATOR, TokenSubtype.BINARY_OPERATOR),
+    NOT_IN(TokenSubtype.OPERATOR, TokenSubtype.BINARY_OPERATOR),
     SAFE_AS(TokenSubtype.OPERATOR, TokenSubtype.BINARY_OPERATOR),
     ASSIGN(TokenSubtype.OPERATOR, TokenSubtype.ASSIGNMENT, TokenSubtype.BINARY_OPERATOR),
     ACCESS(TokenSubtype.OPERATOR, TokenSubtype.BINARY_OPERATOR),
@@ -63,6 +65,7 @@ enum class TokenType(vararg val subtypes: TokenSubtype) {
     CLOSE_BRACE(TokenSubtype.GROUP_END),
     OPEN_BRACKET(TokenSubtype.GROUP_START),
     CLOSE_BRACKET(TokenSubtype.GROUP_END),
+    COLON(TokenSubtype.OTHER),
 
 
     SPACE(TokenSubtype.WHITESPACE),
@@ -75,6 +78,7 @@ enum class TokenType(vararg val subtypes: TokenSubtype) {
     GLOBAL(TokenSubtype.KEYWORD, TokenSubtype.MODIFIER),
     FILE(TokenSubtype.KEYWORD, TokenSubtype.MODIFIER),
     FINAL(TokenSubtype.KEYWORD, TokenSubtype.MODIFIER),
+    META(TokenSubtype.KEYWORD, TokenSubtype.MODIFIER),
     VAL(TokenSubtype.KEYWORD),
     VAR(TokenSubtype.KEYWORD),
     CONST(TokenSubtype.KEYWORD, TokenSubtype.MODIFIER),

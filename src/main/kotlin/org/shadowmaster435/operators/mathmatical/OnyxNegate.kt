@@ -1,23 +1,24 @@
 package org.shadowmaster435.operators.mathmatical
 
+import org.shadowmaster435.built_ins.numberType
 import org.shadowmaster435.impl.DataProvider
-import org.shadowmaster435.impl.abstracts.OnyxOperator
+import org.shadowmaster435.impl.OnyxType
 import org.shadowmaster435.impl.abstracts.OnyxUnaryOperator
 import org.shadowmaster435.util.GenericHolder
 
-abstract class OnyxNegate<A,B> : OnyxUnaryOperator<A, B>() {
+abstract class OnyxNegate(type: OnyxType, retType: OnyxType) : OnyxUnaryOperator(type, retType) {
     override val precedence = 12
     override fun toString() = "(-)"
-    class ByPrimitiveNumber : OnyxNegate<Number, Number>() {
-        @Suppress("UNCHECKED_CAST", "DuplicatedCode")
-        override fun evaluate(params: OnyxOperator<Number>.EvaluationParams): DataProvider<Number> {
+    class ByPrimitiveNumber : OnyxNegate(numberType, numberType) {
+        @Suppress("DuplicatedCode")
+        override fun evaluate(params: EvaluationParams): DataProvider {
             val a = params.getParam(0)
-            fun double() = GenericHolder(-a.held.toDouble())
-            fun float() = GenericHolder(-a.held.toFloat())
-            fun long() = GenericHolder(-a.held.toLong())
-            fun int() = GenericHolder(-a.held.toInt())
-            fun short() = GenericHolder(-a.held.toShort())
-            fun byte() = GenericHolder(-a.held.toByte())
+            fun double() = GenericHolder(-(a.held as Double))
+            fun float() = GenericHolder(-(a.held as Float))
+            fun long() = GenericHolder(-(a.held as Long))
+            fun int() = GenericHolder(-(a.held as Int))
+            fun short() = GenericHolder(-(a.held as Short))
+            fun byte() = GenericHolder(-(a.held as Byte))
             return when(a.held) {
                 is Double -> double()
                 is Float -> float()
@@ -26,13 +27,12 @@ abstract class OnyxNegate<A,B> : OnyxUnaryOperator<A, B>() {
                 is Short -> short()
                 is Byte -> byte()
                 else -> throw RuntimeException("Unknown number class")
-            } as DataProvider<Number>
-
+            }
         }
     }
     companion object {
-        fun create(provider: DataProvider<*>): OnyxNegate<*, *> {
-            return if (Number::class.java.isAssignableFrom(provider.typeClass)) {
+        fun create(provider: DataProvider): OnyxNegate {
+            return if (provider.type.castableTo(numberType)) {
                 ByPrimitiveNumber()
             } else throw RuntimeException("Unknown")
         }
