@@ -7,9 +7,24 @@ class OnyxPackage(val packageName: String, val parent: OnyxPackage?) {
     private val classes = hashMapOf<String, OnyxClass>()
     val qualifiedName = run {
         var cur = ""
-        while (parent != null) cur += "${parent.packageName}."
+        var parent = parent
+        while (parent != null) {
+            cur = "${parent.packageName}.$cur"
+            parent = parent.parent
+        }
         "$cur$packageName"
     }
+
+    override fun toString(): String {
+        return qualifiedName
+    }
+
+    override fun hashCode() = qualifiedName.hashCode()
+
+    override fun equals(other: Any?) =
+        if (other !is OnyxPackage) false else qualifiedName == other.qualifiedName
+
+    operator fun div(string: String) = add(string)
 
     fun add(packageName: String): OnyxPackage {
         var wasPresent = true

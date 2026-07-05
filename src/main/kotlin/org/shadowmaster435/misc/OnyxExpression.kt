@@ -24,15 +24,17 @@ class OnyxExpression(operations: List<Pair<OnyxOperator, List<DataProvider>>>, o
         var second: DataProvider,
         val precedence: Int
     ) : DataProvider {
+        var thisInstance: DataProvider? = null
         override var initialized: Boolean = false
-        override fun instantiate(vararg params: DataProvider) = this
+        override fun instantiate(thisInstance: DataProvider?, vararg params: DataProvider) = this
         override val type; get() = throw RuntimeException("Should Never Be Called")
-        override var held; get() = evaluate(); set(_) {}
+        override var held; get() = evaluate(thisInstance); set(_) {}
         val isBinary = op is OnyxBinaryOperator
         override fun toString(): String {
-            return "$first $op $second"
+            return "($first $op $second)"
         }
-        fun evaluate(): Any? {
+        fun evaluate(thisInstance: DataProvider?): Any? {
+            this.thisInstance = thisInstance
             val builder = op.begin()
             builder.accept(first)
             if (isBinary) {
@@ -55,12 +57,11 @@ class OnyxExpression(operations: List<Pair<OnyxOperator, List<DataProvider>>>, o
     }
 
     val chain = run {
-        class TempOp: DataProvider {
-            override var initialized: Boolean
-                get() = throw RuntimeException("This shouldn't happen")
-                set(value) {throw RuntimeException("This shouldn't happen")}
-
-            override fun instantiate(vararg params: DataProvider) = this
+        class TempOp : DataProvider {
+            override var initialized: Boolean = false
+            override fun instantiate(thisInstance: DataProvider?, vararg params: DataProvider): OnyxMember? {
+                throw RuntimeException("This shouldn't happen")
+            }
             override var held: Any?; get() = throw RuntimeException("This shouldn't happen")
                 set(_) {throw RuntimeException("This shouldn't happen")}
             override val type; get() = throw RuntimeException("This shouldn't happen")
@@ -168,18 +169,20 @@ class OnyxExpression(operations: List<Pair<OnyxOperator, List<DataProvider>>>, o
         rootOp!!
     }
 
+
     override fun initialize(namedScopeMembers: HashMap<String, OnyxMember>) {
         chain.treeInit(namedScopeMembers)
     }
 
-    override fun instantiate(vararg params: DataProvider) = this
+    override fun instantiate(thisInstance: DataProvider?, vararg params: DataProvider) = this
 
     override fun toString(): String {
         return "($chain)"
     }
 
     @Suppress("UNCHECKED_CAST")
-    fun evaluate(): DataProvider {
-        return GenericHolder(chain.evaluate()) as DataProvider
+    fun evaluate(thisInstance: DataProvider? = null): DataProvider {
+
+        return GenericHolder(chain.evaluate(thisInstance))
     }
 }

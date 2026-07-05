@@ -7,7 +7,7 @@ import org.shadowmaster435.impl.abstracts.OnyxBinaryOperator
 import org.shadowmaster435.util.GenericHolder
 
 abstract class OnyxAdd(leftType: OnyxType, rightType: OnyxType, retType: OnyxType) : OnyxBinaryOperator(leftType, rightType, retType) {
-    override val precedence = 9
+    override val precedence = 8
     override fun toString() = "+"
 
     class ByPrimitiveNumber : OnyxAdd(numberType, numberType, numberType) {
@@ -60,6 +60,7 @@ abstract class OnyxAdd(leftType: OnyxType, rightType: OnyxType, retType: OnyxTyp
     }
     companion object {
         fun create(left: DataProvider, right: DataProvider): OnyxAdd {
+            println(left.type)
             return if (left.type.castableTo(numberType) && right.type.castableTo(numberType)) {
                 ByPrimitiveNumber()
             } else throw RuntimeException("Unknown")

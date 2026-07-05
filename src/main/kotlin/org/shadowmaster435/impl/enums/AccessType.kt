@@ -4,4 +4,5 @@ enum class AccessType {
     PRIVATE,
     PUBLIC,
     PROTECTED,
+    PACKAGE
 }

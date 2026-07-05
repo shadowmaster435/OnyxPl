@@ -1,19 +1,42 @@
 package org.shadowmaster435.code
 
+import org.shadowmaster435.code.fields.OnyxField
+import org.shadowmaster435.code.statement.OnyxReturnStatement
 import org.shadowmaster435.impl.DataProvider
 import org.shadowmaster435.impl.OnyxMember
+import org.shadowmaster435.util.GenericHolder
 
 class OnyxCodeBlock(val members: List<OnyxMember>, val needsReturn: Boolean = true, val ret: DataProvider? = null): OnyxMember {
     val last = members.lastOrNull()
     override var initialized: Boolean = false
 
-    fun execute() {
+    val size: Int get() {
+        var i = 0
+        var usesAbstractTypes = false
         members.forEach {
-            when(it) {
-                is OnyxCodeBlock -> it.execute()
-                is DataProvider -> it.held
+            if (it is OnyxField) {
+                if (it.type.size == -1) usesAbstractTypes = true
+                else i += it.type.size
             }
         }
+        return i * if (usesAbstractTypes) -1 else 1
+    }
+
+    fun execute(thisInstance: DataProvider? = null): DataProvider {
+        var ret: DataProvider = GenericHolder(Unit)
+        members.forEach {
+            when(it) {
+                is OnyxCodeBlock -> ret = it.execute(thisInstance)
+                is OnyxReturnStatement -> {
+                    it.held?.let { passed ->
+                        ret = GenericHolder(passed)
+                    }
+                    return@forEach
+                }
+                is DataProvider -> ret = GenericHolder(it.held)
+            }
+        }
+        return ret
     }
 
     override fun initialize(namedScopeMembers: HashMap<String, OnyxMember>) {
@@ -25,7 +48,17 @@ class OnyxCodeBlock(val members: List<OnyxMember>, val needsReturn: Boolean = tr
         }
     }
 
+    override fun instantiate(
+        thisInstance: DataProvider?,
+        vararg params: DataProvider
+    ) = this
 
-    override fun instantiate(vararg params: DataProvider) = this
+    override fun toString(): String {
+        var str = "${if (ret == null) "" else "${ret.type.name} "}{\n"
+        members.forEach {
+            str += "\t$it"
+        }
+        return "$str}"
+    }
 
 }

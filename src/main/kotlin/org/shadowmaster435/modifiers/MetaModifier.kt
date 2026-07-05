@@ -15,6 +15,7 @@ object MetaModifier : Modifier {
         ProtectedModifier::class.java,
         PublicModifier::class.java,
         PackageModifier::class.java,
-        GlobalModifier::class.java
+        GlobalModifier::class.java,
+        OpenModifier::class.java
     )
 }

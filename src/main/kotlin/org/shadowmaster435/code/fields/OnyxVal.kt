@@ -8,6 +8,8 @@ class OnyxConst(name: String, provider: DataProvider, modifiers: OnyxModifiers):
     override fun toString(): String {
         return "$modifiers const $name = $provider"
     }
+    override fun instantiate(thisInstance: DataProvider?, vararg params: DataProvider) = this
+
 }
 open class OnyxVal(name: String, provider: DataProvider, modifiers: OnyxModifiers) : OnyxField(name, modifiers, provider) {
     override var held = provider.held
@@ -24,7 +26,7 @@ open class OnyxVal(name: String, provider: DataProvider, modifiers: OnyxModifier
         return "$modifiers val $name: ${provider.type.name} = $provider"
     }
 
-    override fun instantiate(vararg params: DataProvider): OnyxMember {
-        return OnyxVal(name, provider.instantiate(*params) as DataProvider, modifiers)
+    override fun instantiate(thisInstance: DataProvider?, vararg params: DataProvider): OnyxMember {
+        return OnyxVal(name, provider.instantiate(thisInstance, *params) as DataProvider, modifiers)
     }
 }

@@ -8,5 +8,5 @@ class GenericHolder(override var held: Any?) : DataProvider, OnyxMember {
     override fun toString() = "$held"
     override val type = anyType
     override var initialized = true
-    override fun instantiate(vararg params: DataProvider) = this
+    override fun instantiate(thisInstance: DataProvider?, vararg params: DataProvider) = this
 }

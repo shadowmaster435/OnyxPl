@@ -1,5 +1,8 @@
 package org.shadowmaster435
 
+import org.shadowmaster435.built_ins.OnyxIntClass
+import org.shadowmaster435.built_ins.OnyxNumberClass
+import org.shadowmaster435.built_ins.numberType
 import org.shadowmaster435.lexer.Lexer
 import org.shadowmaster435.lexer.LexerKeypointParser
 import org.shadowmaster435.tokenizer.Tokenizer
@@ -7,7 +10,8 @@ import org.shadowmaster435.types.LLVMIntType
 import org.shadowmaster435.util.LLVMModule
 
 fun main() {
-    fieldTesting()
+//    testExpressions()
+    println(OnyxNumberClass("Number", listOf(), type = numberType).toString())
 }
 
 fun testModifiers() {
@@ -43,14 +47,14 @@ fun testExpressions() {
     val d = "4 * -2 + 8 * 8 * 2 + 21 * 4 + 4 + -4 * 44 * 1 + 45 + 1"
     val e = "2 + ((1 - 4) * 4)" // make work
     val f = "2 + (4 * (1 - 4))"
-    val tokens = Tokenizer.tokenize(e)
+    val tokens = Tokenizer.tokenize(a)
     val keypoints = LexerKeypointParser.parse(tokens)
-    println(keypoints)
-//    @Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
-//    val expr = Lexer.lexExpression(tokens, keypoints, Integer::class.java)
-//    println(expr)
-//    println(expr.evaluate())
-//    println(2 * 2 * 8 / 3 % 2 * 5 * 5 + 1 * 2 - 4 - 15 * 4 - 34 * 4)
+    val adf = OnyxIntClass.type
+
+    val expr = Lexer.lexExpression(tokens, keypoints, OnyxIntClass.type)
+    println(expr)
+    println(expr.held)
+    println(2 * 2 * 8 / 3 % 2 * 5 * 5 + 1 * 2 - 4 - 15 * 4 - 34 * 4)
 
 }
 

@@ -14,8 +14,8 @@ class OnyxVar(name: String, provider: DataProvider, modifiers: OnyxModifiers) : 
         return "$modifiers var $name = $provider"
     }
 
-    override fun instantiate(vararg params: DataProvider): OnyxMember {
-        return OnyxVar(name, provider.instantiate(*params) as DataProvider, modifiers)
+    override fun instantiate(thisInstance: DataProvider?, vararg params: DataProvider): OnyxMember {
+        return OnyxVar(name, provider.instantiate(thisInstance,*params) as DataProvider, modifiers)
     }
 
 }

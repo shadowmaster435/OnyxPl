@@ -7,7 +7,7 @@ import org.shadowmaster435.impl.abstracts.OnyxBinaryOperator
 import org.shadowmaster435.util.GenericHolder
 
 abstract class OnyxSub(leftType: OnyxType, rightType: OnyxType, retType: OnyxType) : OnyxBinaryOperator(leftType, rightType, retType) {
-    override val precedence = 9
+    override val precedence = 8
     override fun toString() = "-"
 
     class ByPrimitiveNumber : OnyxSub(numberType, numberType, numberType) {

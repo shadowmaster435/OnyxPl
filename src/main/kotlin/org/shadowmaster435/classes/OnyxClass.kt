@@ -7,31 +7,31 @@ import org.shadowmaster435.code.fields.OnyxField
 import org.shadowmaster435.impl.DataProvider
 import org.shadowmaster435.impl.OnyxMember
 import org.shadowmaster435.impl.OnyxType
+import org.shadowmaster435.impl.enums.AccessType
 import org.shadowmaster435.memory.OnyxClassInstance
 import org.shadowmaster435.misc.OnyxModifiers
 import org.shadowmaster435.misc.OnyxPackage
 
-val anyType = OnyxType("Any", OnyxPackages.onyxPrimitives, listOf())
+val anyType = OnyxType("Any", OnyxPackages.onyxPrimitives, listOf(), size = -1)
 open class OnyxClass(
     val modifiers: OnyxModifiers,
     name: String, pkg: OnyxPackage,
     val constructorMembers: List<OnyxMember> = listOf(),
     val codeBlock: OnyxCodeBlock? = null,
     supertypes: List<OnyxType> = listOf(),
-    val type: OnyxType = OnyxType(name, pkg, supertypes + listOf(anyType))
+    val type: OnyxType = OnyxType(name, pkg, supertypes, fun(): Int {
+        var size = codeBlock?.size ?: 0
+        var usesAbstractTypes = false
+        constructorMembers.forEach {
+            if (it is OnyxField) {
+                if (it.type.size == -1) usesAbstractTypes = true
+                else size += it.type.size
+            }
+        }
+        return size * if (usesAbstractTypes) -1 else 1
+    }.invoke())
 ): OnyxMember {
     override var initialized: Boolean = false
-    var castType: OnyxType = type; private set
-
-    private val initSequence = listOf(
-        OnyxFunction::class.java,
-        OnyxField::class.java
-    )
-
-    open fun cast(clazz: OnyxClass) {
-        if (clazz.type == type) return
-        else if (type.castableTo(clazz.type)) castType = clazz.type
-    }
 
 
     override fun initialize(namedScopeMembers: HashMap<String, OnyxMember>) {
@@ -40,9 +40,45 @@ open class OnyxClass(
             initialized = true
         }
     }
+    private fun accessCheck(modifiers: OnyxModifiers, accessType: AccessType) = when(accessType) {
+        AccessType.PUBLIC -> modifiers.isPublic
+        AccessType.PROTECTED -> modifiers.isProtected
+        AccessType.PRIVATE -> modifiers.isPrivate
+        AccessType.PACKAGE -> modifiers.isPackage
+    }
 
-    override fun instantiate(vararg params: DataProvider): OnyxMember? {
+    fun memberFields(accessType: AccessType): List<OnyxField> {
+        return buildList {
+            codeBlock?.members?.forEach {
+                if (it is OnyxField) if (accessCheck(it.modifiers, accessType) && !it.modifiers.isStatic) {
+                    add(it)
+                }
+            }
+        } + buildList { constructorMembers.forEach {
+            if (it is OnyxField) if (accessCheck(it.modifiers, accessType)) add(it)
+        } }
+    }
+
+
+    fun memberFunctions(accessType: AccessType): List<OnyxFunction> {
+        return buildList {
+            codeBlock?.members?.forEach {
+                if (it is OnyxFunction) if (when(accessType) {
+                        AccessType.PUBLIC -> it.modifiers.isPublic
+                        AccessType.PROTECTED -> it.modifiers.isProtected
+                        AccessType.PRIVATE -> it.modifiers.isPrivate
+                        AccessType.PACKAGE -> it.modifiers.isPackage
+                    }  && !it.modifiers.isStatic) {
+                    add(it)
+                }
+            }
+        }
+    }
+
+    override fun instantiate(thisInstance: DataProvider?, vararg params: DataProvider): OnyxMember? {
         return OnyxClassInstance(this, (codeBlock?.members ?: listOf()) + constructorMembers)
     }
+
+    override fun toString() = "package ${type.pkg}\n\n$modifiers class $type $codeBlock"
 
 }

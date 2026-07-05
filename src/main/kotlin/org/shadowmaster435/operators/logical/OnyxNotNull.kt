@@ -1,7 +1,6 @@
 package org.shadowmaster435.operators.logical
 
 import org.shadowmaster435.built_ins.OnyxBoolean
-import org.shadowmaster435.built_ins.numberType
 import org.shadowmaster435.impl.DataProvider
 import org.shadowmaster435.impl.OnyxType
 import org.shadowmaster435.impl.abstracts.OnyxUnaryOperator
@@ -15,6 +14,4 @@ open class OnyxNotNull(type: OnyxType, retType: OnyxType) : OnyxUnaryOperator(ty
     }
 
     override fun toString() = "!!"
-
-
 }
