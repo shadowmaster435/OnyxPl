@@ -1,6 +1,7 @@
 package org.shadowmaster435.tokenizer
 
 import org.shadowmaster435.util.IntIterHolder
+import java.io.File
 
 object Tokenizer {
 
@@ -116,6 +117,42 @@ object Tokenizer {
         add(TokenizerScanner("true", TokenType.TRUE))
         add(TokenizerScanner("false", TokenType.FALSE))
         sortWith(Comparator { tokenizer, tokenizer1 -> tokenizer1.len - tokenizer.len })
+    }
+
+    private fun readFiles(path: String): Map<String, String> {
+        return buildMap {
+            val file = File(path)
+            if (file.exists()) {
+                if (file.isDirectory) {
+                    file.list()!!.forEach { f ->
+                        val it = "$path/$f"
+                        val subFile = File(it)
+                        if (subFile.isDirectory) {
+                            val subTokens = readFiles(it)
+                            subTokens.forEach { (string, string1) ->
+                                put(string, string1)
+                            }
+                        } else if (subFile.path.endsWith(".onx")) {
+                            val str = String(subFile.readBytes())
+                            put(subFile.absolutePath, str)
+                        }
+                    }
+                } else if (file.path.endsWith(".onx")) {
+
+                    val str = String(file.readBytes())
+                    put(file.absolutePath, str)
+                }
+            }
+        }
+    }
+
+    fun tokenizeProject(path: String, preserveNonStringSpaces: Boolean = false): HashMap<String, List<Token>> {
+        val files = readFiles(path)
+        val map = hashMapOf<String, List<Token>>()
+        files.forEach { (k, v) ->
+            map[k] = tokenize(v, preserveNonStringSpaces)
+        }
+        return map
     }
 
     fun tokenize(string: String, preserveNonStringSpaces: Boolean = false) = buildList {

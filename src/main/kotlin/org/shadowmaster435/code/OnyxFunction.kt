@@ -11,7 +11,8 @@ import org.shadowmaster435.misc.OnyxTuples
 
 open class OnyxFunction(val name: String, val type: OnyxType, val tuples: OnyxTuples, val modifiers: OnyxModifiers, val block: OnyxCodeBlock?, val classFuncType: OnyxType? = null) : OnyxMember {
     override var initialized: Boolean = false
-
+    constructor(name: String, type: OnyxType, modifiers: OnyxModifiers, block: OnyxCodeBlock?, classFuncType: OnyxType? = null) :
+            this(name, type, OnyxTuples.empty, modifiers, block, classFuncType)
     fun invoke(inputs: List<DataProvider>, prevalidated: Boolean = false): DataProvider {
         if (block == null) {
             if (modifiers.isAbstract) throw RuntimeException("Called an abstract function this shouldn't happen")
@@ -59,6 +60,6 @@ open class OnyxFunction(val name: String, val type: OnyxType, val tuples: OnyxTu
         return true
     }
 
-    override fun toString() = "$modifiers fun $name($tuples): $type ${if (block != null) "$block" else ""}\n"
+    override fun toString() = "$modifiers fun $name($tuples): $type {${if (block != null) "$block" else ""}\t}\n"
 
 }

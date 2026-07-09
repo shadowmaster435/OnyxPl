@@ -8,7 +8,7 @@ import org.shadowmaster435.util.GenericHolder
 import kotlin.math.max
 
 class OnyxTuples(val tuples: List<OnyxTuple>): OnyxMember {
-
+    constructor(vararg tuples: OnyxTuple) : this(tuples.toList())
     override var initialized = false
     val requiredTuples = run {
         var count = 0

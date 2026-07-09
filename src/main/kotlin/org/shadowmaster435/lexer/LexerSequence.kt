@@ -1,6 +1,5 @@
 package org.shadowmaster435.lexer
 
-import org.shadowmaster435.impl.DataHolder
 import org.shadowmaster435.impl.DataProvider
 import org.shadowmaster435.tokenizer.Token
 import org.shadowmaster435.tokenizer.TokenType

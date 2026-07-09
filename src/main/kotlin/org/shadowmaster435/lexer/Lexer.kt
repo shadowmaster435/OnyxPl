@@ -1,5 +1,6 @@
 package org.shadowmaster435.lexer
 
+import org.shadowmaster435.built_ins.OnyxBuiltinClasses
 import org.shadowmaster435.code.fields.OnyxVal
 import org.shadowmaster435.code.fields.OnyxVar
 import org.shadowmaster435.impl.CodeObject
@@ -9,19 +10,18 @@ import org.shadowmaster435.impl.OnyxType
 import org.shadowmaster435.impl.abstracts.OnyxBinaryOperator
 import org.shadowmaster435.impl.abstracts.OnyxOperator
 import org.shadowmaster435.impl.abstracts.OnyxUnaryOperator
-import org.shadowmaster435.built_ins.OnyxBoolean
-import org.shadowmaster435.built_ins.OnyxByte
 import org.shadowmaster435.misc.OnyxConstable
-import org.shadowmaster435.built_ins.OnyxDouble
 import org.shadowmaster435.misc.OnyxExpression
-import org.shadowmaster435.built_ins.OnyxFloat
-import org.shadowmaster435.built_ins.OnyxInt
-import org.shadowmaster435.built_ins.OnyxIntClass
-import org.shadowmaster435.built_ins.OnyxLong
-import org.shadowmaster435.built_ins.OnyxNull
+import org.shadowmaster435.built_ins.OnyxPrimitives.*
+import org.shadowmaster435.built_ins.OnyxPackages
+import org.shadowmaster435.built_ins.OnyxPrimitives
 import org.shadowmaster435.misc.OnyxModifiers
-import org.shadowmaster435.built_ins.OnyxShort
-import org.shadowmaster435.built_ins.OnyxString
+import org.shadowmaster435.classes.OnyxClass
+import org.shadowmaster435.code.OnyxFunction
+import org.shadowmaster435.code.fields.OnyxField
+import org.shadowmaster435.impl.OnyxCodeFile
+import org.shadowmaster435.impl.OnyxMember
+import org.shadowmaster435.misc.OnyxPackage
 import org.shadowmaster435.modifiers.AbstractModifier
 import org.shadowmaster435.modifiers.FinalModifier
 import org.shadowmaster435.modifiers.GlobalModifier
@@ -44,6 +44,8 @@ import org.shadowmaster435.operators.mathmatical.OnyxSub
 import org.shadowmaster435.tokenizer.Token
 import org.shadowmaster435.tokenizer.TokenType
 import org.shadowmaster435.tokenizer.Tokenizer
+
+
 typealias T = TokenType
 object Lexer {
 
@@ -71,6 +73,15 @@ object Lexer {
         while(tokens[i].type == T.SPACE) i++
     }
 
+    fun lexProject(projectName: String, tokens: HashMap<String, List<Token>>) {
+        val lexer = ProjectLexer(projectName)
+        val tokenKeypoints = HashMap<String, Pair<List<Token>, List<LexerKeypointParser.LexerKeypoint>>>()
+        tokens.forEach {
+            val keypoints = LexerKeypointParser.parse(it.value)
+            tokenKeypoints[it.key] = it.value to keypoints
+        }
+        lexer.lexProject(tokenKeypoints)
+    }
 
     private fun lex(tokens: List<Token>) {
         tokenCount = tokens.size
@@ -133,9 +144,9 @@ object Lexer {
                         resultList.add(
                             createBinaryOperator(
                                 (leftProvider ?: run {
-                                    throw RuntimeException("Missing expression before binary operator")
+                                    throw LexerException(line, "Missing expression before binary operator")
                                 }),
-                                (provider ?: throw RuntimeException("Missing expression after binary operator")),
+                                (provider ?: throw LexerException(line, "Missing expression after binary operator")),
                                 token.type
                             ) to listOf(leftProvider, provider)
                         )
@@ -171,41 +182,18 @@ object Lexer {
 
             TokenType.ELVIS -> OnyxIs(left.type, right.type)
 
-            else -> throw RuntimeException("this should never happen")
+            else -> throw LexerException(line, "this should never happen")
         }
     }
 
     private fun createUnaryOperator(provider: DataProvider, type: TokenType): OnyxUnaryOperator {
         return when(type) {
             TokenType.SUB -> OnyxNegate.create(provider)
-            else -> throw RuntimeException("this should never happen")
+            else -> throw LexerException(line, "this should never happen")
         }
     }
 
-    fun lexField(tokens: List<Token>, keypointIndex: Int, keypoints: List<LexerKeypointParser.LexerKeypoint>, modifiers: OnyxModifiers = OnyxModifiers(listOf(
-        PublicModifier))): DataProvider {
-        val startPoint = keypoints[keypointIndex].index
-        var exprKeypointStartIndex = 0
-        val exprStart = run {
-            var i = keypointIndex
-            while (i < keypoints.size) {
-                val kp = keypoints[i]
-                if (kp.type == LexerKeypointParser.LexerKeypointType.EXPRESSION_START) {
-                    exprKeypointStartIndex = i
-                    return@run kp.index
-                }
-                i++
-            }
-            -1
-        }
 
-        val tokens = tokens.slice(keypointIndex..<tokens.size)
-        val isVar = tokens.first().type == TokenType.VAR
-        val name = tokens[1].tokenString
-        val hasDefinedType = tokens[2].type == TokenType.COLON
-        val expr = lexExpression(tokens, keypoints.slice((exprKeypointStartIndex)..<keypoints.size), OnyxIntClass.type)
-        return if (isVar) OnyxVar(name, expr, modifiers) else OnyxVal(name, expr, modifiers)
-    }
 
 
     fun tryLexModifiers(tokens: List<Token>): OnyxModifiers? {
@@ -247,6 +235,149 @@ object Lexer {
         Pair(T.FINAL, FinalModifier),
         Pair(T.META, MetaModifier),
     )
+
+    private class ProjectLexer(val projectName: String) {
+        val projectRootPackage = OnyxPackage(projectName, OnyxPackages.globalRoot)
+        private var packageLexed = false
+        fun lexProject(tokenMap: HashMap<String, Pair<List<Token>, List<LexerKeypointParser.LexerKeypoint>>>) {
+            tokenMap.forEach { 
+                val file = lexFile(it.value.first, it.value.second)
+            }
+        }
+
+        fun lexFile(tokens: List<Token>, keypoints: List<LexerKeypointParser.LexerKeypoint>): OnyxCodeFile {
+            val lexer = FileLexer(this)
+            val pkg = lexer.lexPackage(tokens, keypoints)
+            val imports = lexer.lexImports(tokens, keypoints)
+            imports.forEach {
+                println(it)
+            }
+            return OnyxCodeFile(pkg, imports)
+        }
+
+    }
+
+    private class FileLexer(val projectLexer: ProjectLexer) {
+        private fun validatePackageName(token: Token, import: Boolean) {
+            if (token.type != TokenType.GENERIC || token.tokenString.contains(if (import) Regex("[^a-zA-Z*]") else Regex("[^a-zA-Z]")))
+                throw LexerException(line, "Package names can only contain alphabetical characters\n Problematic string ${token.tokenString}")
+        }
+  
+
+        fun lexPackage(tokens: List<Token>, keypoints: List<LexerKeypointParser.LexerKeypoint>): OnyxPackage {
+            keypoints.find { it.type == LexerKeypointParser.LexerKeypointType.PACKAGE } ?: return projectLexer.projectRootPackage
+            val pkgIndex = tokens.indexOfFirst { it.type == TokenType.NEWLINE }
+            var pkg = projectLexer.projectRootPackage
+            var separator = false
+            val sliced = tokens.slice(i..<if (pkgIndex < 0) tokens.size else pkgIndex + 1)
+            sliced.forEach {
+                if (it.type == TokenType.ACCESS) {
+                    if (separator) {
+                        throw LexerException(line, "Empty sub package name")
+                    }
+                    else separator = true
+                } else {
+                    if (it.type != TokenType.PACKAGE) {
+                        if (it.type != TokenType.NEWLINE) {
+                            validatePackageName(it, false)
+                            pkg = pkg.add(it.tokenString)
+                            separator = false
+                        } else return@forEach
+                    }
+                }
+            }
+            return pkg
+        }
+
+        fun lexImports(tokens: List<Token>, keypoints: List<LexerKeypointParser.LexerKeypoint>): HashSet<OnyxMember> {
+            OnyxPackages.init()
+            OnyxBuiltinClasses.staticInit()
+            val imports = hashSetOf<OnyxMember>()
+            val classNames = hashSetOf<String>()
+            val funcNames = hashMapOf<String, OnyxFunction>()
+            val fieldNames = hashSetOf<String>()
+            fun checkMember(it: OnyxMember) {
+                when(it) {
+                    is OnyxClass ->
+                        if (classNames.contains(it.type.name))
+                            throw LexerException(line, "Duplicate Class Name ${it.type.name}")
+                        else classNames.add(it.type.name)
+                    is OnyxField ->
+                        if (fieldNames.contains(it.name))
+                            throw LexerException(line, "Duplicate Field ${it.name}")
+                        else fieldNames.add(it.name)
+                    is OnyxFunction -> {
+                        val name = it.name + it.tuples.toString()
+                        val func = funcNames[name]
+                        if (func != null && (func.name + func.tuples.tuples) == name)
+                            throw LexerException(line, "Duplicate Function ${it.name}")
+                        else fieldNames.add(it.name + it.tuples.toString())
+                    }
+                    else -> {}
+                }
+            }
+            
+            keypoints.forEach { kp ->
+                if (kp.type == LexerKeypointParser.LexerKeypointType.IMPORT) {
+                    var qName = ""
+                    tokens.slice((kp.index + 1)..<tokens.size).forEach subtokens@{
+                        if (it.type == TokenType.NEWLINE) return@subtokens
+                        if (it.type != TokenType.ACCESS) validatePackageName(it, true)
+                        qName += it.tokenString
+                    }
+                    val wildcard = qName.endsWith("*")
+                    if (wildcard) {
+                        qName = qName.substring(0..<qName.lastIndexOf('.'))
+                        val pkg = projectLexer.projectRootPackage.byQualifiedNameFromCurrent(qName) ?:
+                            throw LexerException(line, "Unknown package $qName")
+                        pkg.forEachMember { 
+                            checkMember(it)
+                            imports.add(it)
+                        }
+                    } else {
+                        val member = OnyxPackage.getMember(qName) ?: throw LexerException(line, "Unknown member name $qName")
+                        checkMember(member)
+                        imports.add(member)
+                    }
+                }
+            }
+            return imports
+        }
+
+        fun lexSingleType(token: Token, imports: HashSet<OnyxClass>): OnyxClass {
+            validatePackageName(token, false)
+            return OnyxPackages.onyxLang.findClassBySimpleName(token.tokenString) ?: 
+            imports.find { it.type.name == token.tokenString} ?: 
+            throw LexerException(line, "Unknown type ${token.tokenString}")
+        }
+        
+
+        fun lexField(tokens: List<Token>, keypointIndex: Int, keypoints: List<LexerKeypointParser.LexerKeypoint>, modifiers: OnyxModifiers = OnyxModifiers(listOf())): DataProvider {
+            val startPoint = keypoints[keypointIndex].index
+            var exprKeypointStartIndex = 0
+            val exprStart = run {
+                var i = keypointIndex
+                while (i < keypoints.size) {
+                    val kp = keypoints[i]
+                    if (kp.type == LexerKeypointParser.LexerKeypointType.EXPRESSION_START) {
+                        exprKeypointStartIndex = i
+                        return@run kp.index
+                    }
+                    i++
+                }
+                -1
+            }
+
+            val tokens = tokens.slice(keypointIndex..<tokens.size)
+            val isVar = tokens.first().type == TokenType.VAR
+            val name = tokens[1].tokenString
+            val hasDefinedType = tokens[2].type == TokenType.COLON
+            val expr = lexExpression(tokens, keypoints.slice((exprKeypointStartIndex)..<keypoints.size), OnyxBuiltinClasses.OnyxIntClass.type)
+            return if (isVar) OnyxVar(name, expr, modifiers) else OnyxVal(name, expr, modifiers)
+        }
+    }
+
+
     object ConstableLexer {
 
         fun tryLexString(tokens: List<Token>) : OnyxString? {

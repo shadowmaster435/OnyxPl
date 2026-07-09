@@ -9,7 +9,6 @@ import org.shadowmaster435.util.GenericHolder
 class OnyxCodeBlock(val members: List<OnyxMember>, val needsReturn: Boolean = true, val ret: DataProvider? = null): OnyxMember {
     val last = members.lastOrNull()
     override var initialized: Boolean = false
-
     val size: Int get() {
         var i = 0
         var usesAbstractTypes = false
@@ -54,11 +53,14 @@ class OnyxCodeBlock(val members: List<OnyxMember>, val needsReturn: Boolean = tr
     ) = this
 
     override fun toString(): String {
-        var str = "${if (ret == null) "" else "${ret.type.name} "}{\n"
+        var str = ""
         members.forEach {
             str += "\t$it"
         }
-        return "$str}"
+        if (ret != null) {
+            str += "\n\t\t$ret"
+        }
+        return "$str\n"
     }
 
 }

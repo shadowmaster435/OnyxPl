@@ -3,7 +3,9 @@ package org.shadowmaster435.built_ins
 import org.shadowmaster435.misc.OnyxPackage
 
 object OnyxPackages {
-    val onyxRoot = OnyxPackage("onyx", null)
+    internal fun init() {} //static init
+    val globalRoot = OnyxPackage("", null)
+    val onyxRoot = globalRoot/"onyx"
     val onyxLang: OnyxPackage = onyxRoot/"lang"
     val onyxPrimitives: OnyxPackage = onyxRoot/"lang"/"primitives"
     val onyxUtil: OnyxPackage = onyxRoot/"lang"/"util"

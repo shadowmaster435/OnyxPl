@@ -8,10 +8,15 @@ import org.shadowmaster435.impl.abstracts.OnyxBinaryOperator
 import org.shadowmaster435.impl.abstracts.OnyxOperator
 import org.shadowmaster435.impl.abstracts.OnyxUnaryOperator
 import org.shadowmaster435.impl.enums.CodeObjType
+import org.shadowmaster435.operators.logical.OnyxIs
+import org.shadowmaster435.operators.other.OnyxAs
 import org.shadowmaster435.util.GenericHolder
 import java.util.*
 
 class OnyxExpression(operations: List<Pair<OnyxOperator, List<DataProvider>>>, override val type: OnyxType) : CodeObject, DataProvider, OnyxMember {
+    constructor(type: OnyxType, vararg operations: Pair<OnyxOperator, List<DataProvider>>) : this(operations.toList(), type)
+    constructor(type: OnyxType, op: OnyxOperator, dat: DataProvider) : this(listOf(op to listOf(dat)), type)
+
     override val objType = CodeObjType.DATA
     override var initialized = false
     override var held
@@ -31,7 +36,7 @@ class OnyxExpression(operations: List<Pair<OnyxOperator, List<DataProvider>>>, o
         override var held; get() = evaluate(thisInstance); set(_) {}
         val isBinary = op is OnyxBinaryOperator
         override fun toString(): String {
-            return "($first $op $second)"
+            return "($first $op${if (op is OnyxAs || op is OnyxIs) "" else " $second"})"
         }
         fun evaluate(thisInstance: DataProvider?): Any? {
             this.thisInstance = thisInstance
@@ -177,7 +182,7 @@ class OnyxExpression(operations: List<Pair<OnyxOperator, List<DataProvider>>>, o
     override fun instantiate(thisInstance: DataProvider?, vararg params: DataProvider) = this
 
     override fun toString(): String {
-        return "($chain)"
+        return "$chain"
     }
 
     @Suppress("UNCHECKED_CAST")

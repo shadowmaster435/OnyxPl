@@ -15,10 +15,10 @@ import org.shadowmaster435.misc.OnyxPackage
 val anyType = OnyxType("Any", OnyxPackages.onyxPrimitives, listOf(), size = -1)
 open class OnyxClass(
     val modifiers: OnyxModifiers,
-    name: String, pkg: OnyxPackage,
+    name: String, val pkg: OnyxPackage,
     val constructorMembers: List<OnyxMember> = listOf(),
-    val codeBlock: OnyxCodeBlock? = null,
-    supertypes: List<OnyxType> = listOf(),
+    codeBlock: OnyxCodeBlock? = null,
+    val supertypes: List<OnyxType> = listOf(),
     val type: OnyxType = OnyxType(name, pkg, supertypes, fun(): Int {
         var size = codeBlock?.size ?: 0
         var usesAbstractTypes = false
@@ -32,8 +32,10 @@ open class OnyxClass(
     }.invoke())
 ): OnyxMember {
     override var initialized: Boolean = false
-
-
+    var codeBlock = codeBlock; internal set
+    internal fun staticInit() {
+        pkg.addClass(this)
+    }
     override fun initialize(namedScopeMembers: HashMap<String, OnyxMember>) {
         if (!initialized) {
             codeBlock?.initialize(namedScopeMembers)
@@ -79,6 +81,20 @@ open class OnyxClass(
         return OnyxClassInstance(this, (codeBlock?.members ?: listOf()) + constructorMembers)
     }
 
-    override fun toString() = "package ${type.pkg}\n\n$modifiers class $type $codeBlock"
+    override fun toString() = "package ${type.pkg}\n\n${run{
+        val str = modifiers.toString()
+        if (str.isEmpty()) "" else "$str "
+    }}class $type${
+        run { 
+            if (supertypes.isEmpty()) ""
+            else {
+                var str = ": "
+                supertypes.forEach { 
+                    str += if (it == supertypes.last()) it.name else "${it.name}, "
+                }
+                str
+            }
+        }
+    } ${if (codeBlock != null) "{\n$codeBlock}" else ""}"
 
 }

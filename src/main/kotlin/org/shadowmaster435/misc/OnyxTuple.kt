@@ -8,6 +8,8 @@ class OnyxTuple(optionalVal: DataProvider? = null, val type: OnyxType, val name:
     override var initialized = false
     val optionalValue = optionalVal
     val optional = optionalValue != null
+    constructor(type: OnyxType, name: String) : this(null, type, name)
+
     override fun initialize(namedScopeMembers: HashMap<String, OnyxMember>) {
         if (!initialized) {
             optionalValue?.initialize(namedScopeMembers)

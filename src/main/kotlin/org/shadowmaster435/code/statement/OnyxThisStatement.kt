@@ -14,6 +14,7 @@ class OnyxThisStatement(clazz: OnyxClass): DataProvider {
 
     }
 
+    override fun toString() = "this"
     override fun instantiate(thisInstance: DataProvider?, vararg params: DataProvider): OnyxMember {
         return thisInstance!!
     }

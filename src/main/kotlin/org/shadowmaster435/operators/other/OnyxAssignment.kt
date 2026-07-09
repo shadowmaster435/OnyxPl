@@ -1,6 +1,6 @@
 package org.shadowmaster435.operators.other
 
-import org.shadowmaster435.built_ins.OnyxPointer
+import org.shadowmaster435.built_ins.OnyxPrimitives.*
 import org.shadowmaster435.built_ins.nullType
 import org.shadowmaster435.built_ins.pointerType
 import org.shadowmaster435.code.fields.OnyxVar

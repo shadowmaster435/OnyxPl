@@ -3,7 +3,9 @@ package org.shadowmaster435.lexer
 enum class LexerScopeType(grouperType: Int = 0, val supportsBodyTypeNesting: Boolean = false, val supportsFunctionCalls: Boolean = false, val polymorphic: Boolean = false) {
     GLOBAL(0, true),
     FILE(0, true),
-    
+    IMPORT(0, false),
+    PACKAGE(0, false),
+
     EXPRESSION(1, false, true),
     
     GETTER_BODY(1, true, true),

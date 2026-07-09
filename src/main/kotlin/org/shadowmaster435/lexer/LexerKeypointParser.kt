@@ -36,7 +36,7 @@ object LexerKeypointParser {
                 }
                 else -> {}
             }
-            updateScopeType(token)
+            updateScopeType(token, keypoints, i)
             checkFieldDef(token, i, keypoints)
             if (scopeUnchanged) {
                 if (token.type.isOperator) {
@@ -57,10 +57,18 @@ object LexerKeypointParser {
                     keypoints.add(LexerKeypoint(currentScopeType,i, token, LexerKeypointType.STRING))
                 else if (lastTokenType.subtypes.contains(TokenType.TokenSubtype.GROUP_START)) {
                     keypoints.add(LexerKeypoint(currentScopeType,i, tokens[i - 1], LexerKeypointType.GROUP_START))
+
+                }  else if (token.type == TokenType.PACKAGE) {
+                    if (currentScopeType == LexerScopeType.FILE && lastTokenType == TokenType.NONE) {
+                        keypoints.add(LexerKeypoint(currentScopeType,i, tokens[i + 1], LexerKeypointType.PACKAGE))
+                    } else throw RuntimeException("Package must be defined first")
+                } else if (token.type == TokenType.IMPORT) {
+                    if (currentScopeType == LexerScopeType.FILE) {
+                        keypoints.add(LexerKeypoint(currentScopeType,i, tokens[i + 1], LexerKeypointType.IMPORT))
+                    } else throw RuntimeException("Package must be defined first")
                 }
             } else if (token.hasSubType(TokenType.TokenSubtype.GROUP_END)) {
                 keypoints.add(LexerKeypoint(currentScopeType,i, token, LexerKeypointType.GROUP_END))
-
             }
 
             if (currentScopeType != lastScopeType) {
@@ -113,7 +121,7 @@ object LexerKeypointParser {
         }
     }
 
-    private fun updateScopeType(token: Token) {
+    private fun updateScopeType(token: Token, keypoints: MutableList<LexerKeypoint>, tokenIndex: Int) {
         scopeUnchanged = false
         val type = token.type
         val sTypes = type.subtypes
@@ -128,7 +136,8 @@ object LexerKeypointParser {
             }
             return isPopScope || isPushScope
         }
-        //region Group Closers
+
+
         when (type) {
             TokenType.CLOSE_BRACKET, TokenType.CLOSE_PARENTHESIS, TokenType.CLOSE_BRACE -> isPopScope = true
             TokenType.GREATER -> isPopScope =
@@ -288,6 +297,8 @@ object LexerKeypointParser {
         TYPE_SPECIFIER,
         FIELD_DEF,
         GROUP_START,
+        IMPORT,
+        PACKAGE,
         OPERATOR,
         STRING,
     }

@@ -1,21 +1,25 @@
 package org.shadowmaster435
 
-import org.shadowmaster435.built_ins.OnyxIntClass
-import org.shadowmaster435.built_ins.OnyxNumberClass
-import org.shadowmaster435.built_ins.numberType
+import org.shadowmaster435.built_ins.OnyxBuiltinClasses
 import org.shadowmaster435.lexer.Lexer
 import org.shadowmaster435.lexer.LexerKeypointParser
+import org.shadowmaster435.tokenizer.Token
 import org.shadowmaster435.tokenizer.Tokenizer
 import org.shadowmaster435.types.LLVMIntType
 import org.shadowmaster435.util.LLVMModule
+import org.shadowmaster435.util.prettyString
 
 fun main() {
-//    testExpressions()
-    println(OnyxNumberClass("Number", listOf(), type = numberType).toString())
+//    val tokens = Tokenizer.tokenizeProject("/home/shadowmaste435/IdeaProjects/OnyxPl/src/main/onyx/")
+//    Lexer.lexProject("test", tokens)
+    OnyxBuiltinClasses.staticInit()
+    println(OnyxBuiltinClasses.OnyxIntClass)
 }
 
 fun testModifiers() {
     val tokens = Tokenizer.tokenize(modifierTest)
+
+
     print(Lexer.tryLexModifiers(tokens))
 }
 
@@ -25,9 +29,7 @@ fun fieldTesting() {
     val a = "val a: Int = 2 + 5 + (4 * (1 - 4))"
     val tokens = Tokenizer.tokenize(a)
     val keypoints = LexerKeypointParser.parse(tokens)
-    val v = Lexer.lexField(tokens, 0, keypoints)
-    println(v)
-    println(v.held)
+
 }
 
 
@@ -49,9 +51,9 @@ fun testExpressions() {
     val f = "2 + (4 * (1 - 4))"
     val tokens = Tokenizer.tokenize(a)
     val keypoints = LexerKeypointParser.parse(tokens)
-    val adf = OnyxIntClass.type
+    val adf = OnyxBuiltinClasses.OnyxIntClass.type
 
-    val expr = Lexer.lexExpression(tokens, keypoints, OnyxIntClass.type)
+    val expr = Lexer.lexExpression(tokens, keypoints, OnyxBuiltinClasses.OnyxIntClass.type)
     println(expr)
     println(expr.held)
     println(2 * 2 * 8 / 3 % 2 * 5 * 5 + 1 * 2 - 4 - 15 * 4 - 34 * 4)
